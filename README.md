@@ -73,6 +73,27 @@ defined roles are:
 > client's onboarding (e.g. via designated indirect access to a participant's DCWs, or
 > "instruct-on-behalf" arrangements).
 
+### The market DLT platform — public networks are not ruled out
+
+The **cash leg** always settles on the Eurosystem's own private, permissioned ESY DLT (or in T2).
+The **asset leg**, however, lives on an external *market DLT platform*, and Pontes is deliberately
+**DLT-agnostic** about it. The Service Description explicitly contemplates three platform/operator
+arrangements:
+
+1. a single Market DLT Operator on a **private / permissioned** platform;
+2. multiple Market DLT Operators on a **private / permissioned** platform;
+3. one or multiple Market DLT Operators on a **public / permissionless** platform.
+
+So **public, permissionless networks (e.g. Ethereum) are not excluded** — the asset and its
+Hash-Link Contract can live on one. The only technical requirement on the chain is the ability to
+*conditionally lock an asset transfer against the provision of a secret* (the escrow used by the
+Hash-Link protocol).
+
+Openness is not the same as open access, though: a platform must still be **onboarded as reference
+data by the Service Providers**, and the asset leg must be the responsibility of a **regulated
+Market DLT Operator vetted by an NCB**. Settling on a public chain therefore also inherits that
+chain's risks (see [Conclusions](#7-conclusions--strengths-and-weaknesses)).
+
 ---
 
 ## 3. The two settlement models — which to use
