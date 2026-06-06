@@ -336,6 +336,68 @@ Official portal: <https://www.ecb.europa.eu/paym/target/> → TARGET professiona
 
 ---
 
+## 8. Conclusions — strengths and weaknesses
+
+*This section is the author's own independent assessment, not an ECB position.*
+
+### What works well
+
+- **A clean, DLT-agnostic way to settle external-DLT transactions in central bank money.** The
+  interoperability mechanism — Pontes acting as keeper of the secrets and "oracle of time",
+  releasing exactly one key according to the cash-leg outcome — is elegant and lightweight. It is
+  API-based and imposes no particular ledger technology on the market, so in principle any external
+  DLT can plug in.
+- **It brings *central bank money* finality to tokenised-asset markets.** This is the real prize:
+  a tokenised bond or equity on a market DLT can settle its cash leg against the safest possible
+  asset — CeBM — instead of a commercial-bank or stablecoin proxy. The central bank's ability to
+  mint the hashes and gate execution is a genuine catalyst for tokenisation on external platforms.
+- **The Direct RTGS path is simple and legally solid.** It reuses T2's existing finality and legal
+  framework, gives immediate per-transaction finality, and requires no new form of money.
+
+### Where it is weak
+
+1. **The dual settlement model is largely redundant.** Trigger-into-T2 (Direct RTGS) and tokenised
+   cash on the ESY DLT deliver, for almost every use case today, the same outcome — and Direct
+   RTGS does it without a wallet, without funding/defunding and without fragmenting liquidity. The
+   cash-token model has **one narrow justification**: very high intraday settlement volume that
+   needs instant on-ledger movement without hitting T2 on every transaction. Outside that niche it
+   adds complexity and a daily liquidity-fragmentation cost for no operational gain. It is best read
+   as an *option on a future* (programmable cash, a unified asset-and-cash ledger, 24/7) that the
+   pilot itself caps — not a tool for the present.
+
+2. **The biggest weakness: the Eurosystem washes its hands of the contract that actually protects
+   the buyer.** Atomic "all-or-none" settlement depends on the Hash-Link Contract (HLC) that
+   escrows the asset — and that contract lives on the **external** market DLT, where the Eurosystem
+   **does not write, deploy, audit or certify it**. The "forced execution" guarantee (the buyer
+   claims the asset with the Execution Key) is only as trustworthy as that code. Concretely, the
+   asset leg is exposed to:
+   - **buggy or poorly implemented contracts**;
+   - **insufficient or absent independent audits**;
+   - **upgradeable / proxy contracts** that can be changed *after* the buyer has verified the terms
+     (the verify-then-pay window is not safe against a mutable contract);
+   - **undocumented backdoors** that let the operator or seller drain or block the escrowed asset.
+
+   The consequence is asymmetric and serious: **the cash settles irrevocably** (especially in
+   Direct RTGS, with immediate T2 finality), **but delivery of the asset hinges on a contract
+   Pontes does not control.** If that contract is broken or malicious, a buyer can pay and never
+   receive the asset, with recourse that is **legal/regulatory against the Market DLT Operator —
+   not technical.** Pontes mitigates this purely **institutionally** (operators must be
+   regulated/supervised entities vetted by an NCB, plus whitelisting and an ex-post audit trail),
+   never technically. A future version could close much of the gap — a certified reference HLC
+   implementation, mandatory third-party audits, a ban on mutable proxies for settlement contracts,
+   or required on-chain checks — but none of that exists in the pilot.
+
+### Bottom line
+
+Pontes is a smart, pragmatic bridge that puts central-bank-money settlement within reach of
+tokenised markets, and the Direct RTGS path is a clean, low-risk default. But its two headline
+features are oversold for the present: the cash-token model is a thinly-justified duplicate of the
+trigger, and the cross-ledger atomicity it advertises is only as strong as external smart contracts
+the Eurosystem deliberately does not stand behind. The mechanism is good; the residual asset-leg
+risk — pushed onto regulated operators rather than engineered away — is the part to watch.
+
+---
+
 *This summary was prepared independently for orientation and does not reproduce any ECB
 document. For authoritative detail and current eligibility/onboarding rules, consult the
 official documents above and the relevant National Central Bank.*
