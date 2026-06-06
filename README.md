@@ -20,6 +20,7 @@
 6. [Access, testing & timeline](#6-access-testing--timeline)
 7. [Conclusions — strengths and weaknesses](#7-conclusions--strengths-and-weaknesses)
 8. [References](#8-references)
+9. [Examples — reference HLC + DvP walk-through](./examples/)
 
 ---
 
