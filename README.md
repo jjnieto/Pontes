@@ -291,6 +291,11 @@ matches the numbers in the §4.1 / §4.2 diagrams.
 the unhappy path, or the Buyer's Execution Key if it lost the step-7 response). On the happy path
 the Buyer already receives the Execution Key in step 7, so step 8 is not needed.*
 
+> **Worked example.** See [`examples/`](./examples/) for a reference Hash-Link Contract in Solidity
+> ([`HashLinkContract.sol`](./examples/HashLinkContract.sol)) and a full **Direct RTGS** DvP
+> walk-through ([`dvp-walkthrough.md`](./examples/dvp-walkthrough.md)) interleaving the real Pontes
+> API calls (`curl`) with the on-chain contract calls (`cast`).
+
 ---
 
 ## 5. How the Pontes network is used (functional view)
