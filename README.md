@@ -132,7 +132,7 @@ set-up, then day-to-day operations.
 
 ## 5. References
 
-Official ECB Pontes documentation (professional-use document links on ecb.europa.eu):
+Official ECB Pontes documentation (professional-use document links on ecb.europa.eu web):
 
 - **Business Description Document (BDD)** — business model, actors and scope.
 - **Service Description (SDD)** — the functional specification (each API feature maps to a
