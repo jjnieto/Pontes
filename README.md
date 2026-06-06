@@ -4,7 +4,7 @@
 > Eurosystem's **Pontes** initiative, written for orientation purposes. It is **not** an
 > official European Central Bank (ECB) publication and is not affiliated with or endorsed by
 > the ECB or the Eurosystem. Always rely on the official documentation (see
-> [References](#references)) for binding information. Figures, dates and eligibility rules
+> [References](#7-references)) for binding information. Figures, dates and eligibility rules
 > reflect the Pilot-phase documents available at the time of writing and are subject to change.
 > Sections labelled **Assessment** reflect the author's independent analysis, not an ECB position.
 
@@ -322,15 +322,15 @@ set-up, then day-to-day operations.
 
 ## 7. References
 
-Official ECB Pontes documentation (professional-use document links on ecb.europa.eu web):
+Official ECB Pontes documentation (professional-use documents on ecb.europa.eu, Spanish editions):
 
-- **Business Description Document (BDD)** — business model, actors and scope.
-- **Service Description (SDD)** — the functional specification (each API feature maps to a
-  chapter of this document).
-- **User Requirements Document (URD)**.
-- **User Handbook (UHB)** — operational guidance.
-- **Testing and Onboarding Strategy**, **Testing Terms of Reference (ToR)**, and the
-  **Mandatory Test Cases**.
+- [**Business Description Document (BDD)**](https://www.ecb.europa.eu/paym/target/target-professional-use-documents-links/pontes/shared/pdf/ecb.pontes260220_bdd.es.pdf?e8f124d2fef5aafadfb68f1859e0c3ab) — business model, actors and scope.
+- [**Service Description (SDD)**](https://www.ecb.europa.eu/paym/target/target-professional-use-documents-links/pontes/shared/pdf/ecb.pontes260515_sddv1.es.pdf?a0226f3879cd414881356b465516b5dd) — the functional specification (each API feature maps to a chapter of this document).
+- [**User Requirements Document (URD)**](https://www.ecb.europa.eu/paym/target/target-professional-use-documents-links/pontes/shared/pdf/ecb.pontes260417_urd1.es.pdf?d9d75baf5783de3520275f2de00a53ce).
+- [**User Handbook (UHB)**](https://www.ecb.europa.eu/paym/target/target-professional-use-documents-links/pontes/shared/pdf/ecb.pontes260515_uhbv1.es.pdf?841a31eae6bd2db9049117f5b8b002fa) — operational guidance.
+- [**Testing and Onboarding Strategy**](https://www.ecb.europa.eu/paym/target/target-professional-use-documents-links/pontes/shared/pdf/ecb.pontes260227_testingstrategy.es.pdf?de694195bdc4dfad4928c8f228588487).
+- [**Testing Terms of Reference (ToR)**](https://www.ecb.europa.eu/paym/target/target-professional-use-documents-links/pontes/shared/pdf/ecb.pontes260527_ttorv1.es.pdf?a193cb4d8f0df2928a165501bc88bcd4).
+- [**Mandatory Test Cases**](https://www.ecb.europa.eu/paym/target/target-professional-use-documents-links/pontes/shared/pdf/ecb.pontes260605_testcases.es.pdf?ab455c15eb87524853577463be75caef).
 
 Official portal: <https://www.ecb.europa.eu/paym/target/> → TARGET professional-use documents → Pontes.
 
