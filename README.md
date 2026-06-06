@@ -7,6 +7,9 @@
 > [References](#8-references)) for binding information. Figures, dates and eligibility rules
 > reflect the Pilot-phase documents available at the time of writing and are subject to change.
 > Sections labelled **Assessment** reflect the author's independent analysis, not an ECB position.
+>
+> Created by: Javier Nieto Centeno
+> https://www.linkedin.com/in/jnieto1970/
 
 ---
 
