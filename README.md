@@ -189,27 +189,31 @@ finality only crystallises at defunding / the EOD sweep.
 > locking/unlocking the asset all happen on the Market DLT and are the Market DLT Operator's
 > responsibility.
 
+The step numbers (**1–9**) are the same across the two diagrams below and the endpoint table in
+§4.3, so you can read all three together. Steps **1–4** are shared by both paths; **5** and **7**
+only occur on the happy path; **8** only on the unhappy path. Steps without an API call (2, 3, 4,
+7, 9 — responses, off-chain notice, or actions on the Market DLT) are not in the endpoint table.
+
 ### 4.1 Happy path — Buyer pays, asset delivered
 
 ```mermaid
 sequenceDiagram
-    autonumber
     participant S as Seller
     participant P as Pontes (ESY DLT / T2)
     participant M as Market DLT (HLC)
     participant B as Buyer
-    S->>P: Initialise DvP  (POST /xvps)
-    P-->>S: DvP id, hash(ExecKey), hash(CancelKey), timeout = +30 min
-    S->>M: Create HLC & lock asset (using the hashes)
-    S-->>B: Notify DvP id (off-chain)
-    B->>P: Init Query (GET /xvps/{id}) — verify hash-lock & terms
-    B->>P: Pay cash leg (POST /xvps/{id}/payment)
+    S->>P: 1 · Initialise DvP (POST /xvps)
+    P-->>S: 2 · DvP id, hash(ExecKey), hash(CancelKey), timeout = +30 min
+    S->>M: 3 · Create HLC & lock asset (using the hashes)
+    S-->>B: 4 · Notify DvP id (off-chain)
+    B->>P: 5 · Init Query (GET /xvps/{id}) — verify hash-lock & terms
+    B->>P: 6 · Pay cash leg (POST /xvps/{id}/payment)
     Note over P: cash leg settles → status SETTLED
-    P-->>B: status = SETTLED + Execution Key
-    alt Cooperative execution
-        S->>M: Seller releases the asset to Buyer
-    else Forced execution
-        B->>M: Buyer reveals Execution Key → HLC releases asset
+    P-->>B: 7 · status = SETTLED + Execution Key
+    alt 9 · Asset release — only ONE of 9a / 9b happens
+        S->>M: 9a · Cooperative — Seller releases asset to Buyer (proves identity, no key)
+    else
+        B->>M: 9b · Forced — Buyer reveals Execution Key → HLC releases asset (no Seller needed)
     end
 ```
 
@@ -217,37 +221,41 @@ sequenceDiagram
 
 ```mermaid
 sequenceDiagram
-    autonumber
     participant S as Seller
     participant P as Pontes (ESY DLT / T2)
     participant M as Market DLT (HLC)
     participant B as Buyer
-    S->>P: Initialise DvP  (POST /xvps)
-    P-->>S: DvP id, hashes, timeout = +30 min
-    S->>M: Create HLC & lock asset
-    S-->>B: Notify DvP id (off-chain)
+    S->>P: 1 · Initialise DvP (POST /xvps)
+    P-->>S: 2 · DvP id, hashes, timeout = +30 min
+    S->>M: 3 · Create HLC & lock asset
+    S-->>B: 4 · Notify DvP id (off-chain)
     alt Buyer never pays
         Note over P: 30-min timeout → payment auto-created as BURNED
     else Buyer pays but no funds
-        B->>P: Pay cash leg (POST /xvps/{id}/payment)
+        B->>P: 6 · Pay cash leg (POST /xvps/{id}/payment)
         Note over P: status = UNSETTLED
     end
-    S->>P: Get Key (GET /xvps/{id}/payment?key=...)
+    S->>P: 8 · Get Key (GET /xvps/{id}/payment?key=...)
     P-->>S: status UNSETTLED/BURNED + Cancellation Key
-    S->>M: Forced Cancellation (reveal Cancellation Key) → HLC returns asset to Seller
+    S->>M: 9 · Forced Cancellation (reveal Cancellation Key) → HLC returns asset to Seller
 ```
 
 ### 4.3 The endpoints (A2A)
 
 Called by the Market Participant or by a Market DLT Operator on its behalf. The two settlement
-models share the same shape; Direct RTGS just adds the `/direct-rtgs` segment.
+models share the same shape; Direct RTGS just adds the `/direct-rtgs` segment. The **Step** column
+matches the numbers in the §4.1 / §4.2 diagrams.
 
-| Step | Actor | Endpoint (Cash Token · Direct RTGS) |
-|------|-------|--------------------------------------|
-| Initialise | Seller | `POST /igw/{ncb}/v1/xvps` · `POST /igw/{ncb}/v1/direct-rtgs/xvps` |
-| Init Query (get hash-lock) | Buyer | `GET /igw/{ncb}/v1/xvps/{id}` · `.../direct-rtgs/xvps/{id}` |
-| Pay cash leg | Buyer | `POST /igw/{ncb}/v1/xvps/{id}/payment` · `.../direct-rtgs/...` |
-| Get Key & status | Seller / Buyer | `GET /igw/{ncb}/v1/xvps/{id}/payment?key={key}` · `.../direct-rtgs/...` |
+| Step | Call | Actor | Endpoint (Cash Token · Direct RTGS) |
+|:----:|------|-------|--------------------------------------|
+| **1** | Initialise DvP | Seller | `POST /igw/{ncb}/v1/xvps` · `POST /igw/{ncb}/v1/direct-rtgs/xvps` |
+| **5** | Init Query (get hash-lock) | Buyer | `GET /igw/{ncb}/v1/xvps/{id}` · `.../direct-rtgs/xvps/{id}` |
+| **6** | Pay cash leg | Buyer | `POST /igw/{ncb}/v1/xvps/{id}/payment` · `.../direct-rtgs/...` |
+| **8** | Get Key & status | Seller / Buyer | `GET /igw/{ncb}/v1/xvps/{id}/payment?key={key}` · `.../direct-rtgs/...` |
+
+*Step 8 is the explicit fallback to fetch a key after the fact (the Seller's Cancellation Key on
+the unhappy path, or the Buyer's Execution Key if it lost the step-7 response). On the happy path
+the Buyer already receives the Execution Key in step 7, so step 8 is not needed.*
 
 ---
 
