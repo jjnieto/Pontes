@@ -135,12 +135,128 @@ across the asset ledger and the cash leg.
 
 ---
 
-## 4. How the Pontes network is used (functional view)
+## 4. How cross-ledger DvP/PvP works (the Hash-Link protocol)
+
+A **DvP** (Delivery-versus-Payment) or **PvP** has two legs on **two different ledgers**: the
+**asset** leg lives on the **external Market DLT platform**, and the **cash** leg lives on
+**Pontes** (ESY DLT / T2). Pontes never touches the asset — it handles only the cash leg and the
+cryptographic conditions that bind the two. Atomic "all-or-none" settlement across the ledgers is
+achieved with the **Hash-Link Protocol**, *not* with single-ledger atomicity (there is no shared
+ledger).
+
+**Roles.** The **Seller** delivers the asset and receives cash; the **Buyer** receives the asset
+and pays cash.
+
+**The two secrets.** Pontes generates an **Execution Key** and a **Cancellation Key** and, at
+initialisation, returns only their **hashes**. The Seller uses those hashes to build a
+**Hash-Link Contract (HLC)** on the Market DLT that escrows the asset. The HLC releases the asset
+**to the Buyer** if the Execution Key is presented, or **back to the Seller** if the Cancellation
+Key is presented.
+
+**The guarantee.** Pontes releases **exactly one** of the two keys, and only once the cash-leg
+outcome is final — so the two legs can never end out of sync. The cash-leg status drives which
+key (if any) is disclosed:
+
+```mermaid
+stateDiagram-v2
+    [*] --> NoPayment: DvP initialised — asset escrowed in HLC
+    NoPayment --> PENDING: Buyer submits payment
+    NoPayment --> BURNED: 30-min timeout, no payment
+    PENDING --> SETTLED: funds available
+    PENDING --> UNSETTLED: insufficient funds
+    SETTLED --> ExecKeyToBuyer: Execution Key released to Buyer
+    UNSETTLED --> CancelKeyToSeller: Cancellation Key released to Seller
+    BURNED --> CancelKeyToSeller: Cancellation Key released to Seller
+    ExecKeyToBuyer --> [*]
+    CancelKeyToSeller --> [*]
+    note right of PENDING: While NoPayment or PENDING, neither key is released
+```
+
+**The clock — a 30-minute window.** Each DvP carries a **timeout = creation time + 30 minutes**
+(a system parameter set by the Operator, currently **30 min for all DvP/PvP**). It marks (i) the
+deadline for the Buyer to pay the cash leg and (ii) the point after which the Seller may claim the
+Cancellation Key if nothing settled. **Note the asymmetry:** it is the **asset** that sits
+escrowed in the HLC for up to 30 minutes — the Buyer's **cash is *not* pre-locked**; it is debited
+only at the moment of payment and settles or fails near-instantly. If the window lapses with no
+payment, Pontes auto-creates the payment as **BURNED**, freeing the Seller to cancel.
+
+**Cash-leg finality** depends on the model picked at initialisation (fixed for the whole
+lifecycle): with **Direct RTGS** the cash settles immediately in T2 (`pacs.010` debit Buyer →
+`pacs.009` credit Seller); with **Cash Token** the wallets move immediately on-ledger but CeBM
+finality only crystallises at defunding / the EOD sweep.
+
+> Pontes's perimeter ends at delivering the key + payment status. Creating the HLC and
+> locking/unlocking the asset all happen on the Market DLT and are the Market DLT Operator's
+> responsibility.
+
+### 4.1 Happy path — Buyer pays, asset delivered
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant S as Seller
+    participant P as Pontes (ESY DLT / T2)
+    participant M as Market DLT (HLC)
+    participant B as Buyer
+    S->>P: Initialise DvP  (POST /xvps)
+    P-->>S: DvP id, hash(ExecKey), hash(CancelKey), timeout = +30 min
+    S->>M: Create HLC & lock asset (using the hashes)
+    S-->>B: Notify DvP id (off-chain)
+    B->>P: Init Query (GET /xvps/{id}) — verify hash-lock & terms
+    B->>P: Pay cash leg (POST /xvps/{id}/payment)
+    Note over P: cash leg settles → status SETTLED
+    P-->>B: status = SETTLED + Execution Key
+    alt Cooperative execution
+        S->>M: Seller releases the asset to Buyer
+    else Forced execution
+        B->>M: Buyer reveals Execution Key → HLC releases asset
+    end
+```
+
+### 4.2 Unhappy path — timeout or no funds, asset returned to Seller
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant S as Seller
+    participant P as Pontes (ESY DLT / T2)
+    participant M as Market DLT (HLC)
+    participant B as Buyer
+    S->>P: Initialise DvP  (POST /xvps)
+    P-->>S: DvP id, hashes, timeout = +30 min
+    S->>M: Create HLC & lock asset
+    S-->>B: Notify DvP id (off-chain)
+    alt Buyer never pays
+        Note over P: 30-min timeout → payment auto-created as BURNED
+    else Buyer pays but no funds
+        B->>P: Pay cash leg (POST /xvps/{id}/payment)
+        Note over P: status = UNSETTLED
+    end
+    S->>P: Get Key (GET /xvps/{id}/payment?key=...)
+    P-->>S: status UNSETTLED/BURNED + Cancellation Key
+    S->>M: Forced Cancellation (reveal Cancellation Key) → HLC returns asset to Seller
+```
+
+### 4.3 The endpoints (A2A)
+
+Called by the Market Participant or by a Market DLT Operator on its behalf. The two settlement
+models share the same shape; Direct RTGS just adds the `/direct-rtgs` segment.
+
+| Step | Actor | Endpoint (Cash Token · Direct RTGS) |
+|------|-------|--------------------------------------|
+| Initialise | Seller | `POST /igw/{ncb}/v1/xvps` · `POST /igw/{ncb}/v1/direct-rtgs/xvps` |
+| Init Query (get hash-lock) | Buyer | `GET /igw/{ncb}/v1/xvps/{id}` · `.../direct-rtgs/xvps/{id}` |
+| Pay cash leg | Buyer | `POST /igw/{ncb}/v1/xvps/{id}/payment` · `.../direct-rtgs/...` |
+| Get Key & status | Seller / Buyer | `GET /igw/{ncb}/v1/xvps/{id}/payment?key={key}` · `.../direct-rtgs/...` |
+
+---
+
+## 5. How the Pontes network is used (functional view)
 
 Interaction follows a participant's **lifecycle**: first onboarding, then reference-data
 set-up, then day-to-day operations.
 
-### 4.1 Onboarding & reference data
+### 5.1 Onboarding & reference data
 - Onboarding of **market participants** and **market DLT operators** (admitted by their NCB).
 - Set-up of **T2 Account References**, optionally **Dedicated Cash Wallets** (only for the token
   model), **whitelists** (which counterparties/wallets may interact), and **powers of attorney /
@@ -148,13 +264,13 @@ set-up, then day-to-day operations.
 - Querying business calendar data: business date, business windows, closed days, the list of
   participating NCBs and market DLT platforms.
 
-### 4.2 Funding & defunding *(Cash Token model only)*
+### 5.2 Funding & defunding *(Cash Token model only)*
 - **Funding** — convert T2 RTGS balances into cash tokens on the ESY DLT.
 - **Defunding** — redeem cash tokens back into T2 RTGS balances (also forced automatically at the
   end-of-day sweep).
 - *Skip this entirely if you settle via Direct RTGS.*
 
-### 4.3 Settlement & payments
+### 5.3 Settlement & payments
 - **Payments** — in either model: *Cash Token* or *Direct RTGS*.
 - **Transfers** — wallet-to-wallet cash-token movements (token model).
 - **XvP (DvP / PvP)** — Delivery-versus-Payment and Payment-versus-Payment, coordinated with the
@@ -165,18 +281,18 @@ set-up, then day-to-day operations.
   owner.
 - **Contingency operations** — issuance/redemption fallbacks for exceptional situations.
 
-### 4.4 Information & monitoring
+### 5.4 Information & monitoring
 - **Queries and extracts** across participants, accounts, wallets, transactions, funding/
   defunding and balances, plus operational statistics and platform health.
 
-### 4.5 Two cross-cutting concepts
+### 5.5 Two cross-cutting concepts
 - **Validation Workflow — "2-Step" vs "1-Step".** Most sensitive operations follow a *4-eyes*
   model: they are created as a **draft** (first action) and then **approved or rejected**
   (second action). 1-Step variants book immediately.
 - **Transaction Type — "Cash Token" vs "Direct RTGS".** Many flows exist in both flavours; the
   choice is exactly the settlement-model decision discussed in [Section 3](#3-the-two-settlement-models--which-to-use).
 
-### 4.6 Interfaces
+### 5.6 Interfaces
 - **A2A (Application-to-Application)** — a REST API (the *EII API*, specified in OpenAPI),
   secured per NCB with OAuth2 (`OAuth2_A2A_<NCB>`) and JWT. It interoperates with existing
   TARGET / T2 RTGS interfaces using standard ISO 20022 messages.
@@ -184,7 +300,7 @@ set-up, then day-to-day operations.
 
 ---
 
-## 5. Access, testing & timeline
+## 6. Access, testing & timeline
 
 - **Test environment:** a single shared environment ("L2 Test Environment") hosts Eurosystem
   Acceptance Testing (EAT), Central Bank Testing (CBT) and User Testing (UT), interconnected
@@ -196,7 +312,7 @@ set-up, then day-to-day operations.
 
 ---
 
-## 6. References
+## 7. References
 
 Official ECB Pontes documentation (professional-use document links on ecb.europa.eu web):
 
